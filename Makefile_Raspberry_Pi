@@ -1,0 +1,42 @@
+# edit the following line if you want to put rmutt elsewhere. the
+# binary will be installed in $PREFIX/bin and the included .rm files
+# will be installed in $PREFIX/share/rmutt
+PREFIX=/usr/local
+
+# these values are included for users of Darwin ports on Mac OS X
+INC_DIRS = -I/opt/local/include
+LIB_DIR = -L/opt/local/lib
+
+CC = gcc
+CFLAGS = -g -Wall -pedantic -DRMUTT_INCLUDE=\"$(PREFIX)/share/rmutt\" -DYYDEBUG=1 $(INC_DIRS) -fsigned-char
+# -DDEBUG
+
+OBJ = lex.yy.o rmutt.tab.o grambit.o list.o main.o grammar.o gstr.o rxutil.o dict.o choose.o
+EXE = rmutt
+
+LIBS = -lfl -lgmp
+
+all: $(OBJ) $(EXE)
+
+clean:
+	rm -rf *.o lex.yy.c rmutt.tab.c rmutt.tab.h rmutt.output core *~ $(EXE)
+
+pure: $(EXE) $(OBJ)
+	purify $(CC) $(OBJ) -o $(EXE) $(LIB_DIR) $(LIBS)
+
+$(EXE): $(OBJ) lex.yy.c rmutt.tab.c
+	$(CC) $(OBJ) -o $(EXE) $(LIB_DIR) $(LIBS)
+
+lex.yy.c: rmutt.lex rmutt.tab.c
+	flex rmutt.lex
+
+rmutt.tab.c: rmutt.y
+	bison -dv rmutt.y
+
+test: $(EXE)
+	(cd test; sh runtests.sh)
+
+install: $(EXE)
+	cp $(EXE) $(PREFIX)/bin/$(EXE)
+	mkdir -p $(PREFIX)/share/rmutt
+	cp examples/*.rm $(PREFIX)/share/rmutt
